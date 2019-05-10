@@ -64,6 +64,18 @@ export async function sync(): Promise<void> {
             cloudConfigGistId = cloudConfigGist.id;
         } else {
             cloudConfigGistId = cloudConfigGist.id;
+            const meta = localfiles.getUserSettingsMeta();
+            if(!meta) {
+                // shouldn't normally happen, but occours if the local settings
+                // do not exist (fresh pulldown) or the settings were deleted.
+                
+            } else {
+                
+            }
+            
+            // determine if local files are more recent than cloud
+            // if more recent, push changes
+            // otherwise pull files down
             await gist.update(pat, cloudConfigGistId, contents);
         }
     } catch (e) { return Promise.reject(e); }
@@ -115,15 +127,15 @@ export async function sync(): Promise<void> {
 //         console.log(mtime);
 //     });
 // }
-export function touchSettingsIfNotExists() {
-    try {
-        const parentDir = storage.getStorageDir();
-        const settingsFile = path.join(parentDir, SETTINGS_FILE);
-        const exists = fs.existsSync(settingsFile);
-        if (!exists) {
-            fs.writeFileSync(settingsFile, Buffer.from(JSON.stringify({}), 'ascii'));
-        }
-    } catch (e) {
-        console.log(e);
-    }
-}
+// export function touchSettingsIfNotExists() {
+//     try {
+//         const parentDir = storage.getStorageDir();
+//         const settingsFile = path.join(parentDir, SETTINGS_FILE);
+//         const exists = fs.existsSync(settingsFile);
+//         if (!exists) {
+//             fs.writeFileSync(settingsFile, Buffer.from(JSON.stringify({}), 'ascii'));
+//         }
+//     } catch (e) {
+//         console.log(e);
+//     }
+// }
