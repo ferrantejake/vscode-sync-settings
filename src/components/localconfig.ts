@@ -6,7 +6,7 @@ export type Settings = {
     username: string,
     token: string
 };
-const SETTINGS_FILE = 'localsettings.json';
+const SETTINGS_FILE = 'localconfig.json';
 
 export function get(): Settings {
     const parentDir = storage.getStorageDir();

@@ -4,7 +4,7 @@ import { Gist } from './components/types';
 import {
 	request,
 	cloudconfig,
-	localsettings,
+	localconfig,
 	storage,
 	token,
 	gist,
@@ -46,7 +46,7 @@ async function editPAT() {
 		// save token
 		vscode.window.showInformationMessage('Sync Settings: personal access token saved.');
 		token.set(pat);
-		localsettings.add({ username: res.body.login, });
+		localconfig.add({ username: res.body.login, });
 	} else {
 		vscode.window.showErrorMessage('Invalid Github personal access token.');
 	}

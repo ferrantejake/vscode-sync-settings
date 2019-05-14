@@ -3,7 +3,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as gist from './gist';
 import { Gist } from './types';
-import { localsettings, cloudconfig, localfiles } from '.';
+import { localconfig, cloudconfig, localfiles } from '.';
 
 export type Settings = {
     username: string,
@@ -11,16 +11,60 @@ export type Settings = {
 };
 let cloudConfigGistId = '';
 
-async function pull() {
-    const { token: pat, username } = localsettings.get();
+export type SettingsFile = { content: string }
+export type CloudConfig = {
+    public: boolean, // false
+    description: string, // "Sync Settings",
+    files: {
+        "sync-settings.json"?: SettingsFile,
+        "user-settings.json"?: SettingsFile,
+        "keybindings.json"?: SettingsFile,
+    }
+};
+
+
+async function getSyncSettings(): Promise<SettingsFile> {
+    const currentCloudConfig = getCloudConfig();
+    // @ts-ignore
+    if (!currentCloudConfig) return;
+    // @ts-ignore
+    let content = currentCloudConfig.files['sync-settings.json'].content;
+    content = JSON.parse(stripJSONComments(content)) as SettingsFile;
+    return content;
+}
+async function getUserSettings(): Promise<SettingsFile> {
+    const currentCloudConfig = getCloudConfig();
+    // @ts-ignore
+    if (!currentCloudConfig) return;
+    // @ts-ignore
+    let content = currentCloudConfig.files['user-settings.json'].content;
+    content = JSON.parse(stripJSONComments(content)) as SettingsFile;
+    return content;
+}
+async function getKeybindinds(): Promise<SettingsFile> {
+    const currentCloudConfig = getCloudConfig();
+    // @ts-ignore
+    if (!currentCloudConfig) return;
+    // @ts-ignore
+    let content = currentCloudConfig.files['keybindings.json'].content;
+    content = JSON.parse(stripJSONComments(content)) as SettingsFile;
+    return content;
+}
+
+async function getCloudConfig(): Promise<CloudConfig> {
+    const { token: pat, username } = localconfig.get();
     if (cloudConfigGistId) {
         return gist.get(pat, cloudConfigGistId);
     }
     const cloudConfigGist = await getCloudConfigGist(pat, username, 0);
-    if (!cloudConfigGist) { return; }
-
-    let content = cloudConfigGist.files['sync-settings.json'].content;
-    content = JSON.parse(stripJSONComments(content));
+    // @ts-ignore
+    if (!cloudConfigGist) return;
+    const mappedCloudConfig: CloudConfig = Object.assign({}, {
+        public: cloudConfigGist.public,
+        description: cloudConfigGist.description,
+        files: cloudConfigGist.files
+    })
+    return mappedCloudConfig;
 }
 
 async function getCloudConfigGist(pat: string, username: string, page: number): Promise<Gist> {
@@ -50,29 +94,45 @@ async function getCloudConfigGist(pat: string, username: string, page: number): 
 
 
 export async function sync(): Promise<void> {
-    const { token: pat, username } = localsettings.get();
+    const { token: pat, username } = localconfig.get();
     const cloudConfigGist = await getCloudConfigGist(pat, username, 0);
     // const cloudConfigFiles = cloudConfigGist.files;
     // just overwrite everything for now
-    const contents = getCloudSettingsStruct();
+    const contents = getCloudConfigStruct();
     try {
         if (!cloudConfigGist) {
+            
             (contents as any).files['sync-settings.json'] = {
-                content: JSON.stringify(pull(), null, '\t'),
+                content: JSON.stringify((), null, '\t'),
             };
             const cloudConfigGist = await gist.create(pat, contents);
             cloudConfigGistId = cloudConfigGist.id;
         } else {
             cloudConfigGistId = cloudConfigGist.id;
-            const meta = localfiles.getUserSettingsMeta();
-            if(!meta) {
-                // shouldn't normally happen, but occours if the local settings
-                // do not exist (fresh pulldown) or the settings were deleted.
-                
-            } else {
-                
-            }
             
+
+
+            /********************************************
+             * User settings procedure
+             */
+            const meta = localfiles.getUserSettingsMeta();
+            if (!meta) {
+                // shouldn't normally happen, but occours if the local user 
+                // settings DNE (fresh pulldown) or the settings were deleted.
+                getCloudConfigGist(pat, username)
+                localfiles.setUserSettings(curCloudConfig.)
+            } else {
+
+            }
+
+            /********************************************
+             * Keybindings procedure
+             */
+
+
+
+
+
             // determine if local files are more recent than cloud
             // if more recent, push changes
             // otherwise pull files down
@@ -80,7 +140,7 @@ export async function sync(): Promise<void> {
         }
     } catch (e) { return Promise.reject(e); }
 
-    function getCloudSettingsStruct() {
+    function getCloudConfigStruct(): CloudConfig {
         const settingsStruct = {
             public: false,
             description: "Sync Settings",
