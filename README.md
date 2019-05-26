@@ -2,4 +2,4 @@
 
 
 ## TODO
-[] Move over to another, lighter request library
+- [ ] Move over to another, lighter request library
