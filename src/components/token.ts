@@ -1,9 +1,9 @@
-import { localsettings } from '.';
+import { localconfig } from '.';
 
 export function get() {
-    const { token } = localsettings.get();
+    const { token } = localconfig.get();
     return token;
 }
 export function set(pat: string) {
-    localsettings.add({ token: pat });
+    localconfig.add({ token: pat });
 }
