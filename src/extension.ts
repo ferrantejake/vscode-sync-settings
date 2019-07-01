@@ -14,13 +14,11 @@ import {
 export async function activate(context: vscode.ExtensionContext) {
 	console.log('Congratulations, your extension "sycnsettings" is now active!');
 	await storage.initiateStorage(context.globalStoragePath);
-
 	const commands: { [key: string]: () => void } = {
 		'extension.openPATPage': openPATPage,
 		'extension.editPAT': editPAT,
 		'extension.syncSettings': syncSettings
 	};
-
 	let disposables = Object.keys(commands).map(cmd => vscode.commands.registerCommand(cmd, commands[cmd]));
 	context.subscriptions.push(...disposables);
 }

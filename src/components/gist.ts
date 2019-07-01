@@ -1,9 +1,7 @@
-import * as cloudconfig from './cloudconfig';
-import * as localfiles from './localfiles';
 import * as request from './request';
 import { Gist } from './types';
 
-export async function list(pat: string, username: string, page?: string): Promise<Gist[]> {
+export async function list(pat: string, username: string, page?: number): Promise<Gist[]> {
     const opts: request.RequestOptions = {
         url: `https://api.github.com/users/${username}/gists`,
         headers: {
@@ -28,27 +26,27 @@ export async function get(pat: string, gistId: string): Promise<Gist> {
     const res = await request.get(opts);
     return res.body;
 }
-export async function update(pat: string, gistId: string, jsonContent: any): Promise<Gist> {
+export async function update(pat: string, gistId: string, jsonPayload: any): Promise<Gist> {
     const opts: request.RequestOptions = {
         url: `https://api.github.com/gists/${gistId}`,
         headers: {
             'Authorization': `token ${pat}`,
             'User-Agent': 'Sync-Settings'
         },
-        json: jsonContent
+        json: jsonPayload
     };
     const res = await request.patch(opts);
     return res.body;
 }
 
-export async function create(pat: string, jsonContent: any): Promise<Gist> {
+export async function create(pat: string, jsonPayload: any): Promise<Gist> {
     const opts: request.RequestOptions = {
         url: `https://api.github.com/gists`,
         headers: {
             'Authorization': `token ${pat}`,
             'User-Agent': 'Sync-Settings'
         },
-        json: jsonContent
+        json: jsonPayload
     };
     const res = await request.post(opts);
     return res.body;

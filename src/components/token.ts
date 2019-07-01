@@ -1,9 +1,9 @@
-import * as settings from './cloudconfig';
+import * as localconfig from './local-config';
 
 export function get() {
-    const { token } = settings._get();
+    const { token } = localconfig.get();
     return token;
 }
 export function set(pat: string) {
-    settings.add({ token: pat });
+    localconfig.add({ token: pat });
 }

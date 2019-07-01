@@ -20,9 +20,19 @@ const possibleKeybindingsSettingsLocations = [
     `${process.env.HOME}/.config/Code - Insiders/User/keybindings.json`
 ];
 
-export function getUserSettings() {
-    const userSettings = getJSONFile(possibleUserSettingsLocations);
-    return userSettings;
+const possibleSyncSettingsLocations = [
+    `${process.env.APPDATA}\\Code\\User\\sync-settings.json`,
+    `${process.env.APPDATA}\\Code - Insiders\\User\\sync-settings.json`,
+    `${process.env.HOME}/Library/Application Support/Code/User/sync-settings.json`,
+    `${process.env.HOME}/Library/Application Support/Code - Insiders/User/sync-settings.json`,
+    `${process.env.HOME}/.config/Code/User/sync-settings.json`,
+    `${process.env.HOME}/.config/Code - Insiders/User/sync-settings.json`
+];
+
+
+export function setSyncSettings(syncSettingsJson: any) {
+    const loc = getWriteLocalFilePath(possibleSyncSettingsLocations);
+    return fs.writeFileSync(loc, JSON.stringify(syncSettingsJson));
 }
 
 export function setUserSettings(userSettingsJson: any) {
@@ -30,7 +40,7 @@ export function setUserSettings(userSettingsJson: any) {
     return fs.writeFileSync(loc, JSON.stringify(userSettingsJson));
 }
 
-export function setKeybindingsSettings(keybindingsJson: any) {
+export function setKeybindings(keybindingsJson: any) {
     const loc = getWriteLocalFilePath(possibleKeybindingsSettingsLocations);
     return fs.writeFileSync(loc, JSON.stringify(keybindingsJson));
 }
@@ -46,6 +56,20 @@ function getWriteLocalFilePath(possibleLocations: string[]) {
     return possibleLocations[i];
 }
 
+export function getSyncSettings() {
+    const syncSettings = getJSONFile(possibleSyncSettingsLocations);
+    return syncSettings;
+}
+
+export function getSyncSettingsMeta() {
+    const loc = getFileLocation(possibleSyncSettingsLocations);
+    if (!loc) return;
+    return fs.statSync(loc);
+}
+export function getUserSettings() {
+    const userSettings = getJSONFile(possibleUserSettingsLocations);
+    return userSettings;
+}
 
 export function getUserSettingsMeta() {
     const loc = getFileLocation(possibleUserSettingsLocations);
@@ -69,6 +93,7 @@ export function getJSONFile(possibleLocations: string[]) {
     let loc = getFileLocation(possibleLocations)
     if (!loc) return;
     let contents = fs.readFileSync(loc, 'ascii');
+    if(!contents || contents === '') return null; 
     contents = stripJSONComments(contents);
     return JSON.parse(contents);
 }
