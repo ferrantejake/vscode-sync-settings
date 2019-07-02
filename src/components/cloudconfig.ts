@@ -1,7 +1,6 @@
 import * as stripJSONComments from 'strip-json-comments';
-import * as gist from './gist';
 import { Gist } from './types';
-import { localconfig, localfiles } from '.';
+import { localconfig, cloudconfig, localfiles, gist, storage, token } from '.';
 
 export type Settings = {
     username: string,
@@ -23,7 +22,7 @@ export type CloudConfigPayload = {
         'keybindings.json'?: SettingsFile,
     }
 };
-async function getSyncSettings(cloudConfigGist:Gist): Promise<SettingsFile> {
+async function getSyncSettings(cloudConfigGist: Gist): Promise<SettingsFile> {
     return getFileFromCloudConfig(cloudConfigGist, SYNC_SETTINGS_FILENAME);
 }
 async function getUserSettings(cloudConfigGist: Gist): Promise<SettingsFile> {
@@ -32,13 +31,13 @@ async function getUserSettings(cloudConfigGist: Gist): Promise<SettingsFile> {
 async function getKeybindings(cloudConfigGist: Gist): Promise<SettingsFile> {
     return getFileFromCloudConfig(cloudConfigGist, KEYBINDINGS_FILENAME);
 }
-async function getFileFromCloudConfig(cloudConfigGist: Gist, filename: 'keybindings.json' | 'user-settings.json' | 'sync-settings.json' ): Promise<SettingsFile> {
+async function getFileFromCloudConfig(cloudConfigGist: Gist, filename: 'keybindings.json' | 'user-settings.json' | 'sync-settings.json'): Promise<SettingsFile> {
     const cloudConfigPayload = await getCloudConfig(cloudConfigGist);
     // @ts-ignore
-    if (!cloudConfigPayload) return;
+    if (!currentCloudConfig) return;
     // @ts-ignore
     let content: any = {};
-    if(cloudConfigPayload.files[filename]) {
+    if (cloudConfigPayload.files[filename]) {
         content = cloudConfigPayload.files[filename]!.content;
         content = JSON.parse(stripJSONComments(content)) as SettingsFile;
     }
@@ -59,7 +58,7 @@ async function getCloudConfig(cloudConfigGist?: Gist): Promise<CloudConfigPayloa
         public: cloudConfigGist.public,
         description: cloudConfigGist.description,
         files: cloudConfigGist.files
-    })
+    });
     return mappedCloudConfig;
 }
 async function getCloudConfigGist(pat: string, username: string, page?: number): Promise<Gist> {
@@ -90,7 +89,6 @@ async function getCloudConfigGist(pat: string, username: string, page?: number):
     });
 }
 
-
 export async function sync(): Promise<void> {
     const { token: pat, username } = localconfig.get();
     if (!pat) return Promise.reject(new Error('Personal access token not configured!'))
@@ -100,6 +98,17 @@ export async function sync(): Promise<void> {
     // const cloudConfigFiles = cloudConfigGist.files;
     // just overwrite everything for now
     try {
+
+        // If couold config DNE, then check local files for push
+        // If they exist, push them to create a new gist
+        // Otherwise create local files and create a new gist
+
+        // If a cloud gist does exist, then check to see if local files exist
+        // If local files exist:
+        // - check timestamps, if they're more recent, overwrite the cloud gist
+        // - otherwise overwrite the local files
+        // If the local files DNE, create them, we have pulled new settings from the cloud.
+
         if (!cloudConfigGist) {
             const localPayload = getLocalConfigPayload();
             if (

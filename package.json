@@ -48,10 +48,10 @@
 		"vscode": "^1.1.28",
 		"tslint": "^5.12.1",
 		"@types/node": "^10.12.21",
+		"@types/request": "^2.48.1",
 		"@types/mocha": "^2.2.42"
 	},
 	"dependencies": {
-		"@types/request": "^2.48.1",
 		"debug": "^4.1.1",
 		"request": "^2.88.0",
 		"strip-json-comments": "^3.0.1"

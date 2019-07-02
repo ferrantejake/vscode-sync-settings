@@ -52,7 +52,7 @@ function getWriteLocalFilePath(possibleLocations: string[]) {
         case 'darwin': i = 2; break;
         default: i = 4;
     }
-    if (vscode.version.includes('-insiders')) i++;
+    if (vscode.version.includes('-insiders')) { i++; }
     return possibleLocations[i];
 }
 
@@ -73,7 +73,7 @@ export function getUserSettings() {
 
 export function getUserSettingsMeta() {
     const loc = getFileLocation(possibleUserSettingsLocations);
-    if (!loc) return;
+    if (!loc) { return; }
     return fs.statSync(loc);
 }
 
@@ -84,14 +84,14 @@ export function getKeybindings() {
 
 export function getKeybindingsMeta() {
     const loc = getFileLocation(possibleKeybindingsSettingsLocations);
-    if (!loc) return;
+    if (!loc) { return; }
     return fs.statSync(loc);
 }
 
 
 export function getJSONFile(possibleLocations: string[]) {
-    let loc = getFileLocation(possibleLocations)
-    if (!loc) return;
+    let loc = getFileLocation(possibleLocations);
+    if (!loc) { return; }
     let contents = fs.readFileSync(loc, 'ascii');
     if(!contents || contents === '') return null; 
     contents = stripJSONComments(contents);

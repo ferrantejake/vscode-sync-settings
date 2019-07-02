@@ -1,4 +1,4 @@
-import * as localconfig from './local-config';
+import { localconfig } from '.';
 
 export function get() {
     const { token } = localconfig.get();
