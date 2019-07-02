@@ -1,6 +1,6 @@
 import * as stripJSONComments from 'strip-json-comments';
 import { Gist } from './types';
-import { localconfig, cloudconfig, localfiles, gist, storage, token } from '.';
+import { localconfig, localfiles, gist } from '.';
 
 export type Settings = {
     username: string,
@@ -206,21 +206,21 @@ export async function sync(): Promise<void> {
 
     // Create payload from local files
     function getLocalConfigPayload(): CloudConfigPayload {
-        const syncSettings = localfiles.getSyncSettings() || {};
-        const userSettings = localfiles.getSyncSettings() || {};
-        const keybindings = localfiles.getSyncSettings() || {};
+        const syncSettings = localfiles.getSyncSettings();
+        const userSettings = localfiles.getUserSettings() || {};
+        const keybindings = localfiles.getKeybindings() || {};
         const settingsStruct = {
             public: false,
             description: "Sync Settings",
             files: {
-                'sync-settings.json': {
-                    content: JSON.stringify(syncSettings, null, '\t'),
-                },
                 'user-settings.json': {
                     content: JSON.stringify(userSettings, null, '\t'),
                 },
                 'keybindings.json': {
                     content: JSON.stringify(keybindings, null, '\t'),
+                },
+                'sync-settings.json': {
+                    content: JSON.stringify(syncSettings, null, '\t'),
                 },
             }
         };

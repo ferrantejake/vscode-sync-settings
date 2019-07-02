@@ -56,9 +56,14 @@ function getWriteLocalFilePath(possibleLocations: string[]) {
     return possibleLocations[i];
 }
 
+export function getDefaultSyncSettings() {
+    const pkg = getJSONFile(['../../package.json']);
+    return { extensionVersion: pkg.version };
+}
+
 export function getSyncSettings() {
     const syncSettings = getJSONFile(possibleSyncSettingsLocations);
-    return syncSettings;
+    return syncSettings || getDefaultSyncSettings();
 }
 
 export function getSyncSettingsMeta() {
@@ -93,7 +98,7 @@ export function getJSONFile(possibleLocations: string[]) {
     let loc = getFileLocation(possibleLocations);
     if (!loc) { return; }
     let contents = fs.readFileSync(loc, 'ascii');
-    if(!contents || contents === '') return null; 
+    if (!contents || contents === '') return null;
     contents = stripJSONComments(contents);
     return JSON.parse(contents);
 }

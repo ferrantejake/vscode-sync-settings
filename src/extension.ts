@@ -17,7 +17,8 @@ export async function activate(context: vscode.ExtensionContext) {
 	const commands: { [key: string]: () => void } = {
 		'extension.openPATPage': openPATPage,
 		'extension.editPAT': editPAT,
-		'extension.syncSettings': syncSettings
+		'extension.syncSettings': syncSettings,
+		'extension.hello': hello
 	};
 	let disposables = Object.keys(commands).map(cmd => vscode.commands.registerCommand(cmd, commands[cmd]));
 	context.subscriptions.push(...disposables);
@@ -59,3 +60,6 @@ async function syncSettings() {
 	}
 }
 
+async function hello() {
+	vscode.window.showInformationMessage('Hello!')
+}
