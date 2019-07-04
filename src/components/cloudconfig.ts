@@ -55,7 +55,7 @@ async function getCloudConfig(cloudConfigGist?: Gist): Promise<CloudConfigPayloa
         if (cloudConfigGistId) {
             return gist.get(pat, cloudConfigGistId);
         }
-        cloudConfigGist = await getCloudConfigGist(pat, username, 0);
+        cloudConfigGist = await getCloudConfigGist(pat, username);
     }
     // @ts-ignore
     if (!cloudConfigGist) { return; }
@@ -67,32 +67,31 @@ async function getCloudConfig(cloudConfigGist?: Gist): Promise<CloudConfigPayloa
     return mappedCloudConfig;
 }
 async function getCloudConfigGist(pat: string, username: string, page?: number): Promise<Gist> {
-    return new Promise(async (resolve, reject) => {
-        page = page || 0;
-        const gists = await gist.list(pat, username, page);
-        if (gists.length) {
-            for (const gist of gists) {
-                const filenames = Object.keys(gist.files);
-                if (
-                    filenames.length === 3
-                    && filenames[0] === SYNC_SETTINGS_FILENAME
-                    // && filenames[1] === EXTENSIONS_FILENAME
-                    && filenames[1] === KEYBINDINGS_FILENAME
-                    && filenames[2] === USER_SETTINGS_FILENAME
-                ) {
-                    cloudConfigGistId = gist.id;
-                    break;
-                }
-            }
-            if (cloudConfigGistId) {
-                return resolve(gist.get(pat, cloudConfigGistId));
-            } else {
-                return resolve(getCloudConfigGist(pat, username, page + 1));
+    page = page || 0;
+    if (cloudConfigGistId) { return gist.get(pat, cloudConfigGistId); }
+    const gists = await gist.list(pat, username, page);
+    if (gists.length) {
+        for (const gist of gists) {
+            const filenames = Object.keys(gist.files);
+            if (
+                filenames.length === 3
+                && filenames[0] === SYNC_SETTINGS_FILENAME
+                // && filenames[1] === EXTENSIONS_FILENAME
+                && filenames[1] === KEYBINDINGS_FILENAME
+                && filenames[2] === USER_SETTINGS_FILENAME
+            ) {
+                cloudConfigGistId = gist.id;
+                break;
             }
         }
-        // resolve null
-        resolve(null as any as Gist);
-    });
+        if (cloudConfigGistId) {
+            return gist.get(pat, cloudConfigGistId);
+        } else {
+            return getCloudConfigGist(pat, username, page + 1);
+        }
+    }
+    // resolve null
+    return Promise.resolve(null as any as Gist);
 }
 
 export async function sync(): Promise<void> {
