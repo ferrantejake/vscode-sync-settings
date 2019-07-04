@@ -17,7 +17,7 @@ export async function list(pat: string, username: string, page?: number): Promis
 
 export async function get(pat: string, gistId: string): Promise<Gist> {
     const opts: request.RequestOptions = {
-        url: `https://api.github.com/users/gists/${gistId}`,
+        url: `https://api.github.com/gists/${gistId}`,
         headers: {
             'Authorization': `token ${pat}`,
             'User-Agent': 'Sync-Settings'

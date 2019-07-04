@@ -8,18 +8,20 @@ export type Settings = {
 };
 let cloudConfigGistId = '';
 
-const SYNC_SETTINGS_FILENAME = 'sync-settings.json';
-const USER_SETTINGS_FILENAME = 'user-settings.json';
+const SYNC_SETTINGS_FILENAME = '.sync-settings.json';
 const KEYBINDINGS_FILENAME = 'keybindings.json';
+const EXTENSIONS_FILENAME = 'extensions.json';
+const USER_SETTINGS_FILENAME = 'user-settings.json';
 
-export type SettingsFile = { content: string }
+export type SettingsFile = { content: string };
 export type CloudConfigPayload = {
     public: boolean, // false
     description: string, // "Sync Settings",
     files: {
-        'sync-settings.json'?: SettingsFile,
-        'user-settings.json'?: SettingsFile,
+        '.sync-settings.json'?: SettingsFile,
+        'extensions.json'?: SettingsFile,
         'keybindings.json'?: SettingsFile,
+        'user-settings.json'?: SettingsFile,
     }
 };
 async function getSyncSettings(cloudConfigGist: Gist): Promise<SettingsFile> {
@@ -31,10 +33,13 @@ async function getUserSettings(cloudConfigGist: Gist): Promise<SettingsFile> {
 async function getKeybindings(cloudConfigGist: Gist): Promise<SettingsFile> {
     return getFileFromCloudConfig(cloudConfigGist, KEYBINDINGS_FILENAME);
 }
-async function getFileFromCloudConfig(cloudConfigGist: Gist, filename: 'keybindings.json' | 'user-settings.json' | 'sync-settings.json'): Promise<SettingsFile> {
+async function getExtensions(cloudConfigGist: Gist): Promise<SettingsFile> {
+    return getFileFromCloudConfig(cloudConfigGist, EXTENSIONS_FILENAME);
+}
+async function getFileFromCloudConfig(cloudConfigGist: Gist, filename: 'keybindings.json' | 'user-settings.json' | '.sync-settings.json' | 'extensions.json'): Promise<SettingsFile> {
     const cloudConfigPayload = await getCloudConfig(cloudConfigGist);
     // @ts-ignore
-    if (!currentCloudConfig) return;
+    if (!cloudConfigPayload) { return; }
     // @ts-ignore
     let content: any = {};
     if (cloudConfigPayload.files[filename]) {
@@ -53,7 +58,7 @@ async function getCloudConfig(cloudConfigGist?: Gist): Promise<CloudConfigPayloa
         cloudConfigGist = await getCloudConfigGist(pat, username, 0);
     }
     // @ts-ignore
-    if (!cloudConfigGist) return;
+    if (!cloudConfigGist) { return; }
     const mappedCloudConfig: CloudConfigPayload = Object.assign({}, {
         public: cloudConfigGist.public,
         description: cloudConfigGist.description,
@@ -71,8 +76,9 @@ async function getCloudConfigGist(pat: string, username: string, page?: number):
                 if (
                     filenames.length === 3
                     && filenames[0] === SYNC_SETTINGS_FILENAME
-                    && filenames[1] === USER_SETTINGS_FILENAME
-                    && filenames[2] === KEYBINDINGS_FILENAME
+                    // && filenames[1] === EXTENSIONS_FILENAME
+                    && filenames[1] === KEYBINDINGS_FILENAME
+                    && filenames[2] === USER_SETTINGS_FILENAME
                 ) {
                     cloudConfigGistId = gist.id;
                     break;
@@ -81,7 +87,7 @@ async function getCloudConfigGist(pat: string, username: string, page?: number):
             if (cloudConfigGistId) {
                 return resolve(gist.get(pat, cloudConfigGistId));
             } else {
-                getCloudConfigGist(pat, username, page + 1);
+                return resolve(getCloudConfigGist(pat, username, page + 1));
             }
         }
         // resolve null
@@ -91,8 +97,8 @@ async function getCloudConfigGist(pat: string, username: string, page?: number):
 
 export async function sync(): Promise<void> {
     const { token: pat, username } = localconfig.get();
-    if (!pat) return Promise.reject(new Error('Personal access token not configured!'))
-    if (!username) return Promise.reject(new Error('Username not configured!'))
+    if (!pat) { return Promise.reject(new Error('Personal access token not configured!')); }
+    if (!username) { return Promise.reject(new Error('Username not configured!')); }
 
     const cloudConfigGist = await getCloudConfigGist(pat, username);
     // const cloudConfigFiles = cloudConfigGist.files;
@@ -118,9 +124,11 @@ export async function sync(): Promise<void> {
                 (localPayload as any).files[SYNC_SETTINGS_FILENAME] = {
                     content: JSON.stringify({}, null, '\t')
                 };
-            };
+            }
+            updatePayloadLastUpdate(localPayload);
             const cloudConfigGist = await gist.create(pat, localPayload);
             cloudConfigGistId = cloudConfigGist.id;
+            // return Promise.resolve();
         } else {
             cloudConfigGistId = cloudConfigGist.id;
             const cloudTouched = new Date(cloudConfigGist.updated_at);
@@ -135,21 +143,59 @@ export async function sync(): Promise<void> {
             // was made. 
 
             /********************************************
-             * User settings procedure
+             * Sync settings procedure
              */
             const syncSettingsMeta = localfiles.getUserSettingsMeta();
             let syncSettingsTouched;
             if (!syncSettingsMeta) {
                 // if the local user 
                 // settings DNE (fresh pulldown) or the settings were deleted.
-                const cloudSyncSettings = getSyncSettings(cloudConfigGist);
+                const cloudSyncSettings = await getSyncSettings(cloudConfigGist);
                 localfiles.setSyncSettings(cloudSyncSettings);
                 syncSettingsTouched = new Date();
             } else {
-                syncSettingsTouched = new Date(syncSettingsMeta.birthtime);
+                syncSettingsTouched = syncSettingsMeta.mtime;
                 if (cloudTouched > syncSettingsTouched) {
-                    const cloudSyncSettings = getSyncSettings(cloudConfigGist);
+                    const cloudSyncSettings = await getSyncSettings(cloudConfigGist);
                     localfiles.setSyncSettings(cloudSyncSettings);
+                }
+                // otherwise do nothing.
+            }
+
+            /********************************************
+             * Extensions procedure
+             */
+            // const extensionsMeta = localfiles.getUserSettingsMeta();
+            // let extensionsTouched;
+            // if (!extensionsMeta) {
+            //     // if the local user 
+            //     // settings DNE (fresh pulldown) or the settings were deleted.
+            //     const cloudExtensions = await getUserSettings(cloudConfigGist);
+            //     localfiles.setUserSettings(cloudExtensions);
+            //     extensionsTouched = new Date();
+            // } else {
+            //     extensionsTouched = extensionsMeta.mtime;
+            //     if (cloudTouched > extensionsTouched) {
+            //         const cloudExtensions = await getUserSettings(cloudConfigGist);
+            //         localfiles.setUserSettings(cloudExtensions);
+            //     }
+            //     // otherwise do nothing.
+            // }
+
+            /********************************************
+             * Keybindings procedure
+             */
+            const keybindingsMeta = localfiles.getKeybindingsMeta();
+            let keybindingsTouched: Date;
+            if (!keybindingsMeta) {
+                const cloudKeybindings = await getKeybindings(cloudConfigGist);
+                localfiles.setKeybindings(cloudKeybindings);
+                keybindingsTouched = new Date();
+            } else {
+                keybindingsTouched = keybindingsMeta.mtime;
+                if (cloudTouched > keybindingsTouched) {
+                    const cloudKeybindings = await getKeybindings(cloudConfigGist);
+                    localfiles.setKeybindings(cloudKeybindings);
                 }
                 // otherwise do nothing.
             }
@@ -162,43 +208,27 @@ export async function sync(): Promise<void> {
             if (!userSettingsMeta) {
                 // if the local user 
                 // settings DNE (fresh pulldown) or the settings were deleted.
-                const cloudUserSettings = getUserSettings(cloudConfigGist);
+                const cloudUserSettings = await getUserSettings(cloudConfigGist);
                 localfiles.setUserSettings(cloudUserSettings);
                 userSettingsTouched = new Date();
             } else {
-                userSettingsTouched = new Date(userSettingsMeta.birthtime);
+                userSettingsTouched = userSettingsMeta.mtime;
                 if (cloudTouched > userSettingsTouched) {
-                    const cloudUserSettings = getUserSettings(cloudConfigGist);
+                    const cloudUserSettings = await getUserSettings(cloudConfigGist);
                     localfiles.setUserSettings(cloudUserSettings);
-                }
-                // otherwise do nothing.
-            }
-
-            /********************************************
-             * Keybindings procedure
-             */
-            const keybindingsMeta = localfiles.getKeybindingsMeta();
-            let keybindingsTouched: Date;
-            if (!keybindingsMeta) {
-                const cloudKeybindings = getKeybindings(cloudConfigGist);
-                localfiles.setKeybindings(cloudKeybindings);
-                keybindingsTouched = new Date();
-            } else {
-                keybindingsTouched = new Date(keybindingsMeta.birthtime);
-                if (cloudTouched > keybindingsTouched) {
-                    const cloudKeybindings = getKeybindings(cloudConfigGist);
-                    localfiles.setKeybindings(cloudKeybindings);
                 }
                 // otherwise do nothing.
             }
 
             if (
                 syncSettingsTouched > cloudTouched
-                || userSettingsTouched > cloudTouched
+                // || extensionsTouched > cloudTouched
                 || keybindingsTouched > cloudTouched
+                || userSettingsTouched > cloudTouched
             ) {
                 // then overwrite everything in the cloud.
                 const localPayload = getLocalConfigPayload();
+                updatePayloadLastUpdate(localPayload);
                 await gist.update(pat, cloudConfigGistId, localPayload);
             }
         }
@@ -209,6 +239,7 @@ export async function sync(): Promise<void> {
         const syncSettings = localfiles.getSyncSettings();
         const userSettings = localfiles.getUserSettings() || {};
         const keybindings = localfiles.getKeybindings() || {};
+        // const extensions = localfiles.getExtensions() || {};
         const settingsStruct = {
             public: false,
             description: "Sync Settings",
@@ -219,11 +250,22 @@ export async function sync(): Promise<void> {
                 'keybindings.json': {
                     content: JSON.stringify(keybindings, null, '\t'),
                 },
-                'sync-settings.json': {
+                '.sync-settings.json': {
                     content: JSON.stringify(syncSettings, null, '\t'),
                 },
+                // 'extensions.json': {
+                //     content: JSON.stringify(extensions, null, '\t'),
+                // },
             }
         };
         return settingsStruct;
+    }
+
+    function updatePayloadLastUpdate(localPayload: CloudConfigPayload) {
+        const syncSettings = JSON.parse(localPayload.files['.sync-settings.json']!.content);
+        const now = new Date();
+        syncSettings.lastUpdatedUTC = now.toUTCString();
+        syncSettings.lastUpdatedLocal = now.toString();
+        localPayload.files['.sync-settings.json']!.content = JSON.stringify(syncSettings, null, '\t');
     }
 }

@@ -29,6 +29,11 @@ const possibleSyncSettingsLocations = [
     `${process.env.HOME}/.config/Code - Insiders/User/sync-settings.json`
 ];
 
+const possibleExtensionsLocations = [
+    `${process.env.USERPROFILE}\\.vscode\\extensions`,
+    `${process.env.USERPROFILE}\\.vscode-insiders\\extensions`,
+];
+
 
 export function setSyncSettings(syncSettingsJson: any) {
     const loc = getWriteLocalFilePath(possibleSyncSettingsLocations);
@@ -45,6 +50,12 @@ export function setKeybindings(keybindingsJson: any) {
     return fs.writeFileSync(loc, JSON.stringify(keybindingsJson));
 }
 
+// export function setExtensions(keybindingsJson: any) {
+//     vscode.;
+//     // const loc = getWriteLocalFilePath(possibleExtensionsLocations);
+//     // return fs.writeFileSync(loc, JSON.stringify(keybindingsJson));
+// }
+
 function getWriteLocalFilePath(possibleLocations: string[]) {
     let i = 0;
     switch (process.platform) {
@@ -52,15 +63,29 @@ function getWriteLocalFilePath(possibleLocations: string[]) {
         case 'darwin': i = 2; break;
         default: i = 4;
     }
-    if (vscode.version.includes('-insiders')) { i++; }
+    if (vscode.version.includes('-insider')) { i++; }
     return possibleLocations[i];
 }
 
 export function getDefaultSyncSettings() {
-    const pkg = getJSONFile(['../../package.json']);
-    return { extensionVersion: pkg.version };
+    try {
+        const pkg = require('../../package.json');
+        return { extensionVersion: pkg.version };
+    } catch (e) {
+        throw e;
+    }
 }
 
+export function getExtensions() {
+    const syncSettings = getJSONFile(possibleExtensionsLocations);
+    return syncSettings;
+}
+
+export function getExtensionsMeta() {
+    const loc = getFileLocation(possibleSyncSettingsLocations);
+    if (!loc) { return; }
+    return fs.statSync(loc);
+}
 export function getSyncSettings() {
     const syncSettings = getJSONFile(possibleSyncSettingsLocations);
     return syncSettings || getDefaultSyncSettings();
@@ -68,7 +93,7 @@ export function getSyncSettings() {
 
 export function getSyncSettingsMeta() {
     const loc = getFileLocation(possibleSyncSettingsLocations);
-    if (!loc) return;
+    if (!loc) { return; }
     return fs.statSync(loc);
 }
 export function getUserSettings() {
@@ -98,7 +123,7 @@ export function getJSONFile(possibleLocations: string[]) {
     let loc = getFileLocation(possibleLocations);
     if (!loc) { return; }
     let contents = fs.readFileSync(loc, 'ascii');
-    if (!contents || contents === '') return null;
+    if (!contents || contents === '') { return null; }
     contents = stripJSONComments(contents);
     return JSON.parse(contents);
 }

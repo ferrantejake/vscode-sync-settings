@@ -19,20 +19,16 @@
 	"contributes": {
 		"commands": [
 			{
-				"command": "extension.hello",
-				"title": "sync: Hello"
-			},
-			{
 				"command": "extension.openPATPage",
-				"title": "sync: Open Github Personal Access Token Page"
+				"title": "VSCode Sync Settings: Open Github Personal Access Token Page"
 			},
 			{
 				"command": "extension.editPAT",
-				"title": "sync: Add/Edit Github Personal Access Token"
+				"title": "VSCode Sync Settings: Add/Edit Github Personal Access Token"
 			},
 			{
 				"command": "extension.syncSettings",
-				"title": "sync: Sync Settings to Cloud"
+				"title": "VSCode Sync Settings: Sync Settings to Cloud"
 			}
 		]
 	},

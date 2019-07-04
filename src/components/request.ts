@@ -8,9 +8,9 @@ const debugV = require('debug')('syncsettings:request');
 
 /**
  * This is a replacement for request.Response (request module) which does not
- * require a body and additionally allows for a type T to be applied to the
- * body. A body in the response is the most common case, therefore T is not
- * optional. If one does not expect a body, T should be set to null or void.
+ * require a body. Additionally this module allows for a type T to be applied to
+ * the body. If one does not expect a body, T should be set to null or void. 
+ * This design is intentional so the expected return value is obvious.
  */
 export interface Response<T> extends http.IncomingMessage {
     // some responses (such as streams and some POST requests) do  not make use
@@ -171,11 +171,9 @@ function parseBestGuess(body: any) {
 }
 
 export function getResponseItem<T>(response: Response<T>): Promise<T> {
-    // debugV('getResponseItem', response);
     return Promise.resolve(response.body) as Promise<T>;
 }
 export function getResponseItems<T>(response: Response<T[]>): Promise<T[]> {
-    // debugV('getResponseItem', response);
     return Promise.resolve(response.body) as Promise<T[]>;
 }
 
@@ -185,7 +183,6 @@ export function getResponseItems<T>(response: Response<T[]>): Promise<T[]> {
  * Status object.
  */
 export type StreamResponse<T> = {
-    // ecobeeResponse: EcobeeResponse<Status | void>,
     response: Response<T | void>,
     stream: PassThrough
 };
@@ -197,31 +194,12 @@ export type StreamResponse<T> = {
  * is that if the HTTP response is successful the response.body will be null and
  * the stream can be passed arund assuming type T. If the request fails we
  * typically need to resolve the body, in which case response.body will be
- * resolved as type T. (See ecobee-client passthrough handler for example)
+ * resolved as type T.
  * @param options
  */
 export function stream<T>(options: RequestOptions) {
     return new Promise<StreamResponse<T>>(resolve => {
-        // see request.js (request source) line 130
-        // stream is an instance of Stream - Jake
-        //
-        // repl example
-        //
-        // > let stream = require('stream').Stream;
-        // undefined
-        // > let request = require('request')
-        // undefined
-        // > let x = request('http://google.com', { method: 'GET' })
-        // undefined
-        // > x instanceof stream.Stream
-        // true
         const requestStream = request(options) as Stream;
-        // Immediately pipe requestStream into new stream (responseStream) because
-        // we read events from requestStream which causes a race condition between
-        // reading events and piping from requestStream. Piping to a new stream
-        // allows for events to be read from the requestStream independently from
-        // information coming through the new stream which is otherwise interefered
-        // with by events.
         const responseStream = new PassThrough();
         requestStream.pipe(responseStream);
         requestStream.on('response', (response: Response<T | null>) => resolve({ response, stream: responseStream } as any));
