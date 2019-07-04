@@ -1,14 +1,10 @@
-import * as fs from 'fs';
 import * as vscode from 'vscode';
-import { Gist } from './components/types';
 import {
 	request,
 	cloudconfig,
 	localconfig,
 	storage,
 	token,
-	gist,
-
 } from './components';
 
 export async function activate(context: vscode.ExtensionContext) {
@@ -18,7 +14,6 @@ export async function activate(context: vscode.ExtensionContext) {
 		'extension.openPATPage': openPATPage,
 		'extension.editPAT': editPAT,
 		'extension.syncSettings': syncSettings,
-		'extension.hello': hello
 	};
 	let disposables = Object.keys(commands).map(cmd => vscode.commands.registerCommand(cmd, commands[cmd]));
 	context.subscriptions.push(...disposables);
@@ -52,14 +47,14 @@ async function editPAT() {
 }
 
 async function syncSettings() {
+	syncSettingsBackground()
+		.then(() => vscode.window.showInformationMessage('Sync Settings: sync successful'));
+}
+
+async function syncSettingsBackground() {
 	try {
 		await cloudconfig.sync();
-		vscode.window.showInformationMessage('Sync Settings: sync successful');
 	} catch (e) {
 		vscode.window.showErrorMessage(e);
 	}
-}
-
-async function hello() {
-	vscode.window.showInformationMessage('Hello!')
 }
