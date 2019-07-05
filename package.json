@@ -1,8 +1,8 @@
 {
-	"name": "sycnsettings",
-	"displayName": "sycnsettings",
+	"name": "vscode-sync-settings",
+	"displayName": "VSCode Sync Settings",
 	"description": "",
-	"version": "0.0.1",
+	"version": "1.0.0",
 	"engines": {
 		"vscode": "^1.31.0"
 	},
@@ -28,7 +28,7 @@
 			},
 			{
 				"command": "extension.syncSettings",
-				"title": "VSCode Sync Settings: Sync Settings to Cloud"
+				"title": "VSCode Sync Settings: Sync Settings"
 			}
 		]
 	},

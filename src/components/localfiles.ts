@@ -37,23 +37,23 @@ const possibleExtensionsLocations = [
 
 export function setSyncSettings(syncSettingsJson: any) {
     const loc = getWriteLocalFilePath(possibleSyncSettingsLocations);
-    return fs.writeFileSync(loc, JSON.stringify(syncSettingsJson));
+    return fs.writeFileSync(loc, JSON.stringify(syncSettingsJson, null, '\t'));
 }
 
 export function setUserSettings(userSettingsJson: any) {
     const loc = getWriteLocalFilePath(possibleUserSettingsLocations);
-    return fs.writeFileSync(loc, JSON.stringify(userSettingsJson));
+    return fs.writeFileSync(loc, JSON.stringify(userSettingsJson, null, '\t'));
 }
 
 export function setKeybindings(keybindingsJson: any) {
     const loc = getWriteLocalFilePath(possibleKeybindingsSettingsLocations);
-    return fs.writeFileSync(loc, JSON.stringify(keybindingsJson));
+    return fs.writeFileSync(loc, JSON.stringify(keybindingsJson, null, '\t'));
 }
 
 // export function setExtensions(keybindingsJson: any) {
 //     vscode.;
 //     // const loc = getWriteLocalFilePath(possibleExtensionsLocations);
-//     // return fs.writeFileSync(loc, JSON.stringify(keybindingsJson));
+//     // return fs.writeFileSync(loc, JSON.stringify(keybindingsJson, null, '\t'));
 // }
 
 function getWriteLocalFilePath(possibleLocations: string[]) {

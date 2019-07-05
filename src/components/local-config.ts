@@ -17,14 +17,14 @@ export function get(): Settings {
 export function set(settings: Settings): void {
     const parentDir = storage.getStorageDir();
     const localConfigFile = path.join(parentDir, LOCAL_CONFIG_FILENAME);
-    fs.writeFileSync(localConfigFile, Buffer.from(JSON.stringify(settings), 'ascii'));
+    fs.writeFileSync(localConfigFile, Buffer.from(JSON.stringify(settings, null, '\t'), 'ascii'));
 }
 export function add(newSettings: Partial<Settings>): void {
     const settings = get() || {};
     Object.assign(settings, newSettings);
     const parentDir = storage.getStorageDir();
     const localConfigFile = path.join(parentDir, LOCAL_CONFIG_FILENAME);
-    fs.writeFileSync(localConfigFile, Buffer.from(JSON.stringify(settings), 'ascii'));
+    fs.writeFileSync(localConfigFile, Buffer.from(JSON.stringify(settings, null, '\t'), 'ascii'));
 }
 export function getLastModified() {
     const parentDir = storage.getStorageDir();
@@ -41,7 +41,7 @@ export function touchSyncSettingsIfNotExists() {
         const localConfigFile = path.join(parentDir, LOCAL_CONFIG_FILENAME);
         const exists = fs.existsSync(localConfigFile);
         if (!exists) {
-            fs.writeFileSync(localConfigFile, Buffer.from(JSON.stringify({}), 'ascii'));
+            fs.writeFileSync(localConfigFile, Buffer.from(JSON.stringify({}, null, '\t'), 'ascii'));
         }
     } catch (e) {
         console.log(e);
