@@ -1,6 +1,7 @@
 {
 	"name": "vscode-sync-settings",
 	"displayName": "VSCode Sync Settings",
+	"publisher": "Jake",
 	"description": "",
 	"version": "1.0.0",
 	"engines": {
@@ -15,6 +16,10 @@
 		"onCommand:extension.editPAT",
 		"onCommand:extension.syncSettings"
 	],
+	"repository": {
+		"type":"git",
+		"url":"git+https://github.com/ferrantejake/vscode-sync-settings.git"
+	},
 	"main": "./out/extension.js",
 	"contributes": {
 		"commands": [
