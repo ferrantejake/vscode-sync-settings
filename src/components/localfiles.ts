@@ -32,6 +32,8 @@ const possibleSyncSettingsLocations = [
 const possibleExtensionsLocations = [
     `${process.env.USERPROFILE}\\.vscode\\extensions`,
     `${process.env.USERPROFILE}\\.vscode-insiders\\extensions`,
+    `${process.env.HOME}\\.vscode\\extensions`,
+    `${process.env.HOME}\\.vscode-insiders\\extensions`,
 ];
 
 
