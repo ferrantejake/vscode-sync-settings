@@ -5,6 +5,7 @@
 	"description": "",
 	"version": "1.0.0",
 	"engines": {
+		"node": "^11.2.0",
 		"vscode": "^1.31.0"
 	},
 	"categories": [
@@ -14,7 +15,8 @@
 		"onCommand:extension.hello",
 		"onCommand:extension.openPATPage",
 		"onCommand:extension.editPAT",
-		"onCommand:extension.syncSettings"
+		"onCommand:extension.syncSettings",
+		"onCommand:extension.downloadExtension"
 	],
 	"repository": {
 		"type":"git",
@@ -34,6 +36,10 @@
 			{
 				"command": "extension.syncSettings",
 				"title": "VSCode Sync Settings: Sync Settings"
+			},
+			{
+				"command": "extension.downloadExtension",
+				"title": "VSCode Sync Settings: Download Extension"
 			}
 		]
 	},

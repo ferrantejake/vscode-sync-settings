@@ -29,13 +29,12 @@ const possibleSyncSettingsLocations = [
     `${process.env.HOME}/.config/Code - Insiders/User/sync-settings.json`
 ];
 
-const possibleExtensionsLocations = [
+const possibleExtensionsDirectoryLocations = [
     `${process.env.USERPROFILE}\\.vscode\\extensions`,
     `${process.env.USERPROFILE}\\.vscode-insiders\\extensions`,
     `${process.env.HOME}\\.vscode\\extensions`,
     `${process.env.HOME}\\.vscode-insiders\\extensions`,
 ];
-
 
 export function setSyncSettings(syncSettingsJson: any) {
     const loc = getWriteLocalFilePath(possibleSyncSettingsLocations);
@@ -51,12 +50,6 @@ export function setKeybindings(keybindingsJson: any) {
     const loc = getWriteLocalFilePath(possibleKeybindingsSettingsLocations);
     return fs.writeFileSync(loc, JSON.stringify(keybindingsJson, null, '\t'));
 }
-
-// export function setExtensions(keybindingsJson: any) {
-//     vscode.;
-//     // const loc = getWriteLocalFilePath(possibleExtensionsLocations);
-//     // return fs.writeFileSync(loc, JSON.stringify(keybindingsJson, null, '\t'));
-// }
 
 function getWriteLocalFilePath(possibleLocations: string[]) {
     let i = 0;
@@ -77,16 +70,10 @@ export function getDefaultSyncSettings() {
         throw e;
     }
 }
-
-export function getExtensions() {
-    const syncSettings = getJSONFile(possibleExtensionsLocations);
-    return syncSettings;
-}
-
-export function getExtensionsMeta() {
-    const loc = getFileLocation(possibleSyncSettingsLocations);
+export function getExtensionsDirectoryLocation() {
+    let loc = getFileLocation(possibleExtensionsDirectoryLocations);
     if (!loc) { return; }
-    return fs.statSync(loc);
+    return loc;
 }
 export function getSyncSettings() {
     const syncSettings = getJSONFile(possibleSyncSettingsLocations);
@@ -130,6 +117,9 @@ export function getJSONFile(possibleLocations: string[]) {
     return JSON.parse(contents);
 }
 
+export function getDirectoryLocation(possibleLocations: string[]) {
+    return getFileLocation(possibleLocations);
+}
 
 export function getFileLocation(possibleLocations: string[]) {
     let target;

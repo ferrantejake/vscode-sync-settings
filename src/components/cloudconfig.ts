@@ -73,13 +73,7 @@ async function getCloudConfigGist(pat: string, username: string, page?: number):
     if (gists.length) {
         for (const gist of gists) {
             const filenames = Object.keys(gist.files);
-            if (
-                filenames.length === 3
-                && filenames[0] === SYNC_SETTINGS_FILENAME
-                // && filenames[1] === EXTENSIONS_FILENAME
-                && filenames[1] === KEYBINDINGS_FILENAME
-                && filenames[2] === USER_SETTINGS_FILENAME
-            ) {
+            if (filenames.indexOf(SYNC_SETTINGS_FILENAME) !== -1) {
                 cloudConfigGistId = gist.id;
                 break;
             }

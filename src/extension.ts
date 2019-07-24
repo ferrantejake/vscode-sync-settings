@@ -5,6 +5,7 @@ import {
 	localconfig,
 	storage,
 	token,
+	extensions
 } from './components';
 
 export async function activate(context: vscode.ExtensionContext) {
@@ -14,6 +15,7 @@ export async function activate(context: vscode.ExtensionContext) {
 		'extension.openPATPage': openPATPage,
 		'extension.editPAT': editPAT,
 		'extension.syncSettings': syncSettings,
+		'extension.downloadExtension': downloadExtension,
 	};
 	let disposables = Object.keys(commands).map(cmd => vscode.commands.registerCommand(cmd, commands[cmd]));
 	context.subscriptions.push(...disposables);
@@ -57,4 +59,11 @@ async function syncSettingsBackground() {
 	} catch (e) {
 		vscode.window.showErrorMessage(e);
 	}
+}
+
+async function downloadExtension() {
+	const uid = await vscode.window.showInputBox();
+	if (!uid) { return; }
+	const [publisher, name, version] = uid.split(';');
+	extensions.downloadExtensionToLocalDevice(publisher, name, version);
 }
