@@ -64,6 +64,6 @@ async function syncSettingsBackground() {
 async function downloadExtension() {
 	const uid = await vscode.window.showInputBox();
 	if (!uid) { return; }
-	const [publisher, name, version] = uid.split(';');
+	const [publisher, name, version] = uid.trim().split(';');
 	extensions.downloadExtensionToLocalDevice(publisher, name, version);
 }

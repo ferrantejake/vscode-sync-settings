@@ -3,6 +3,7 @@ import { request, localfiles } from '.';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as url from 'url';
+var extractzip = require('extract-zip');
 
 export type Extension = {
     isActive: boolean;
@@ -52,21 +53,20 @@ export async function downloadExtensionToLocalDevice(publisher: string, name: st
     const extensionsDirectoryName = `${publisher}.${name}-${version}`;
     const extensionDirectoryPath = path.join(extensionDirLoc, extensionsDirectoryName);
 
+    if (fs.existsSync(extensionDirectoryPath)) {
+        // Directory already exists?
+        // Maybe we need to remove the directory and download the 
+        return Promise.resolve(); // file already exists
+    }
     if (fs.existsSync(zipFilePath)) {
-        if (fs.existsSync(extensionDirectoryPath)) {
-            // Directory already exists?
-            // Maybe we need to remove the directory and download the 
-            return Promise.resolve(); // file already exists
-        } else {
-            // proceeded to unzip
-            unzip(zipFilePath, extensionDirectoryPath);
-            fs.unlinkSync(zipFilePath);
-            return Promise.resolve();
-        }
+        // proceeded to unzip
+        // unzip(zipFilePath, extensionDirectoryPath);
+        fs.unlinkSync(zipFilePath);
+        // return Promise.resolve();
     }
 
-    return new Promise(async (resolve, reject) => {
 
+    return new Promise(async (resolve, reject) => {
         try {
             const downloadUri = getMarketplaceDownloadUri(publisher, name, version);
             const options: request.RequestOptions = {
@@ -81,9 +81,10 @@ export async function downloadExtensionToLocalDevice(publisher: string, name: st
                 },
                 gzip: true
             };
-            const streamResponse = await request.stream(options).catch(error =>
-                console.log(error)
-            );
+            const streamResponse = await request.stream(options)
+                .catch(error =>
+                    console.log(error)
+                );
             if (!streamResponse) {
                 return reject(new Error('Unable to stream file contents'));
             }
@@ -93,6 +94,7 @@ export async function downloadExtensionToLocalDevice(publisher: string, name: st
             // streamResponse.stream.on('ready' => {});
 
             const ws = fs.createWriteStream(zipFilePath, { encoding: 'utf-8' });
+
 
             if ((ws as fs.WriteStream & { pending: boolean }).pending) {
                 ws.on('ready', () => ws.pipe(streamResponse.stream));
@@ -104,17 +106,22 @@ export async function downloadExtensionToLocalDevice(publisher: string, name: st
             });
             ws.on('close', () => {
                 console.log('writer emitted "close" event');
-                unzip(zipFilePath, extensionDirectoryPath);
-                fs.unlinkSync(zipFilePath);
-                console.log('operation complete');
-                resolve();
+                unzipfn(zipFilePath, extensionDirectoryPath)
+                    .then(() => {
+                        fs.unlinkSync(zipFilePath);
+                        console.log('operation complete');
+                        resolve();
+                    })
+                    .catch(e => {
+                        console.log('e', e)
+                        reject(e);
+                    });
             });
-            ws.on('finish', () => {
-                console.log('writer emitted "finish" event');
-            });
+            // ws.on('finish', () => {
+            //     console.log('writer emitted "finish" event');
+            // });
             ws.on('error', e => {
-                console.log('writer emitted "error" event');
-                console.log(e);
+                console.log('e', e)
                 reject(e);
             });
         } catch (e) {
@@ -124,8 +131,18 @@ export async function downloadExtensionToLocalDevice(publisher: string, name: st
 
 }
 
-function unzip(inzip: string, outdir: string) {
-
+function unzipfn(inzip: string, outdir: string) {
+    return new Promise((resolve, reject) => {
+        extractzip(inzip, { dir: outdir }, function (e: Error) {
+            if (e) return reject(e);
+            return resolve();
+            // extraction is complete. make sure to handle the err
+        })
+        // const rs = fs.createReadStream(inzip)
+        //     .pipe((unzip as any).Extract({ path: outdir }));
+        // rs.on('close', () => resolve());
+        // rs.on('error', (e: any) => reject(e));
+    });
 }
 
 export function removeExtensionFromLocalDevice(publisher: string, name: string, version: string) {

@@ -19,8 +19,8 @@
 		"onCommand:extension.downloadExtension"
 	],
 	"repository": {
-		"type":"git",
-		"url":"git+https://github.com/ferrantejake/vscode-sync-settings.git"
+		"type": "git",
+		"url": "git+https://github.com/ferrantejake/vscode-sync-settings.git"
 	},
 	"main": "./out/extension.js",
 	"contributes": {
@@ -51,15 +51,15 @@
 		"test": "npm run compile && node ./node_modules/vscode/bin/test"
 	},
 	"devDependencies": {
-		"typescript": "^3.3.1",
-		"vscode": "^1.1.28",
-		"tslint": "^5.12.1",
+		"@types/mocha": "^2.2.42",
 		"@types/node": "^10.12.21",
 		"@types/request": "^2.48.1",
-		"@types/mocha": "^2.2.42"
+		"typescript": "^3.3.1",
+		"vscode": "^1.1.28"
 	},
 	"dependencies": {
 		"debug": "^4.1.1",
+		"extract-zip": "^1.6.7",
 		"request": "^2.88.0",
 		"strip-json-comments": "^3.0.1"
 	}
