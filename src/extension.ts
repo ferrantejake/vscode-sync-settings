@@ -54,11 +54,8 @@ async function syncSettings() {
 }
 
 async function syncSettingsBackground() {
-	try {
-		await cloudconfig.sync();
-	} catch (e) {
-		vscode.window.showErrorMessage(e);
-	}
+	return cloudconfig.sync()
+		.catch(error => vscode.window.showErrorMessage(`Sync Settings: ${error.message}`));
 }
 
 async function downloadExtension() {

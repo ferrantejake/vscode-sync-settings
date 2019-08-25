@@ -1,6 +1,6 @@
 import * as stripJSONComments from 'strip-json-comments';
 import { Gist } from './types';
-import { localconfig, localfiles, gist } from '.';
+import { localconfig, localfiles, gist, extensions, utils } from '.';
 
 export type Settings = {
     username: string,
@@ -88,6 +88,13 @@ async function getCloudConfigGist(pat: string, username: string, page?: number):
     return Promise.resolve(null as any as Gist);
 }
 
+
+/**
+ * Sync: 
+ * Gets latest cloud configuration. If no configuration exists a new one is 
+ * created locally. Keybindings, settings, extensions are synced in accordance 
+ * to the latest information. The updated cloud configuration is uploaded. 
+ */
 export async function sync(): Promise<void> {
     const { token: pat, username } = localconfig.get();
     if (!pat) { return Promise.reject(new Error('Personal access token not configured!')); }
@@ -158,6 +165,11 @@ export async function sync(): Promise<void> {
             /********************************************
              * Extensions procedure
              */
+            const exts = extensions.getAllLocallyInstalledExtensions();
+            exts.forEach(e => {
+
+            })
+
             // const extensionsMeta = localfiles.getUserSettingsMeta();
             // let extensionsTouched;
             // if (!extensionsMeta) {
@@ -232,7 +244,7 @@ export async function sync(): Promise<void> {
         const syncSettings = localfiles.getSyncSettings();
         const userSettings = localfiles.getUserSettings() || {};
         const keybindings = localfiles.getKeybindings() || {};
-        // const extensions = localfiles.getExtensions() || {};
+        const exts = buildExtensions() || {};
         const settingsStruct = {
             public: false,
             description: "Sync Settings",
@@ -246,12 +258,37 @@ export async function sync(): Promise<void> {
                 '.sync-settings.json': {
                     content: JSON.stringify(syncSettings, null, '\t'),
                 },
-                // 'extensions.json': {
-                //     content: JSON.stringify(extensions, null, '\t'),
-                // },
+                'extensions.json': {
+                    content: JSON.stringify(exts, null, '\t'),
+                },
             }
         };
         return settingsStruct;
+
+        function buildExtensions(currentExtensions?: any) {
+            const computerUniqueIdentier = utils.getComputerUniqueIdentifier()
+            const exts = extensions.getAllLocallyInstalledExtensions();
+            const build = exts.reduce((acc, e) => {
+                    const extensionUniqueIdentier = `${e.publisher}:${e.name}`
+                    acc.all[extensionUniqueIdentier] = e;
+                    acc.whitelists[computerUniqueIdentier] = {
+                        ...acc.whitelists[computerUniqueIdentier],
+                        [extensionUniqueIdentier]: {
+                            version: e.version,
+                            isActive: e.isActive
+                        }
+                    }
+                    return acc;
+                }, currentExtensions || {
+                    all: {},
+                    whitelists: {
+                        [computerUniqueIdentier]: {
+                            lastUpdated: (new Date()).toISOString(),
+                        }
+                    }
+                } as any);
+            return build;
+        }
     }
 
     function updatePayloadLastUpdate(localPayload: CloudConfigPayload) {

@@ -3,7 +3,7 @@ import { request, localfiles } from '.';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as url from 'url';
-var extractzip = require('extract-zip');
+// var extractzip = require('extract-zip');
 
 export type Extension = {
     isActive: boolean;
@@ -11,6 +11,7 @@ export type Extension = {
     version: string;
     publisher: string;
     // uniqueId: string // `${publisher};${name};${version}`
+    createdAt: string
 };
 
 export type ExtensionPackage = {
@@ -21,18 +22,21 @@ export type ExtensionPackage = {
 
 
 export function getAllLocallyInstalledExtensions(): Extension[] {
-    return vscode.extensions.all.map(extension => {
-        const { isActive, packageJSON } = extension;
-        const { name, version, publisher } = packageJSON as ExtensionPackage;
-        const e: Extension = {
-            isActive,
-            name,
-            version,
-            publisher,
-            // uniqueId: `${publisher};${name};${version}`
-        };
-        return e;
-    });
+    return vscode.extensions.all
+        .map(extension => {
+            const { isActive, packageJSON } = extension;
+            const { name, version, publisher } = packageJSON as ExtensionPackage;
+            const e: Extension = {
+                isActive,
+                name,
+                version,
+                publisher,
+                // uniqueId: `${publisher};${name};${version}`
+                createdAt: (new Date()).toISOString() // temp
+            };
+            return e;
+        })
+        .filter(e => e.publisher !== 'vscode')
 }
 
 export function getMarketplaceDownloadUri(publisher: string, name: string, version: string) {
@@ -104,24 +108,22 @@ export async function downloadExtensionToLocalDevice(publisher: string, name: st
             streamResponse.stream.on('data', e => {
                 return;
             });
-            ws.on('close', () => {
+            ws.on('close', async () => {
                 console.log('writer emitted "close" event');
-                unzipfn(zipFilePath, extensionDirectoryPath)
-                    .then(() => {
-                        fs.unlinkSync(zipFilePath);
-                        console.log('operation complete');
-                        resolve();
-                    })
-                    .catch(e => {
-                        console.log('e', e)
-                        reject(e);
-                    });
+                try {
+                    await installExtension(zipFilePath, extensionDirectoryPath);
+                    console.log('operation complete');
+                    resolve();
+                } catch (e) {
+                    console.log('e', e);
+                    reject(e);
+                }
             });
             // ws.on('finish', () => {
             //     console.log('writer emitted "finish" event');
             // });
             ws.on('error', e => {
-                console.log('e', e)
+                console.log('e', e);
                 reject(e);
             });
         } catch (e) {
@@ -131,18 +133,21 @@ export async function downloadExtensionToLocalDevice(publisher: string, name: st
 
 }
 
-function unzipfn(inzip: string, outdir: string) {
-    return new Promise((resolve, reject) => {
-        extractzip(inzip, { dir: outdir }, function (e: Error) {
-            if (e) return reject(e);
-            return resolve();
-            // extraction is complete. make sure to handle the err
-        })
-        // const rs = fs.createReadStream(inzip)
-        //     .pipe((unzip as any).Extract({ path: outdir }));
-        // rs.on('close', () => resolve());
-        // rs.on('error', (e: any) => reject(e));
-    });
+/**
+ * Moves .zip file over to .vsix and installes using code tooling
+ * @param zipFilePath 
+ * @param extensionDirectoryPath 
+ */
+function installExtension(zipFilePath: string, extensionDirectoryPath: string) {
+    // move zip to vsix
+    const vsixFilePath = zipFilePath.substr(0, zipFilePath.length - 3).concat('vsix');
+    fs.renameSync(zipFilePath, vsixFilePath);
+
+    // install vsix using code tooling (code --install-extension <vsixpath>)
+    // vscode.env.
+
+    return Promise.resolve();
+    // reload suggestion is done higher up    
 }
 
 export function removeExtensionFromLocalDevice(publisher: string, name: string, version: string) {
