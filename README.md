@@ -13,3 +13,6 @@ Synchronize your Visual Studio Code settings across multiple computers
 - [ ] Add settings/keybindings blacklist
 - [ ] Diff conflicts for user
 - [ ] Automated sync based on local file changes / polling
+- [ ] Cloud-managed extensions
+- [ ] Device-speicfic extension whitelists
+- [ ] Extensions which should always install without asking

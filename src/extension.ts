@@ -51,6 +51,7 @@ async function editPAT() {
 async function syncSettings() {
 	syncSettingsBackground()
 		.then(() => vscode.window.showInformationMessage('Sync Settings: sync successful'));
+		
 }
 
 async function syncSettingsBackground() {

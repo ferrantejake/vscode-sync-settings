@@ -3,27 +3,28 @@ type cloudConfigSpecv1 = {
     files: {
         '.sync-settings.json': {
             extensionVersion: string,
-            lastUpdatedUTC: string, // ISO date format
-            lastUpdatedLocal: string // ISO date format
+            lastUpdatedUTC: string,                     // ISO date format.
+            lastUpdatedLocal: string                    // ISO date format.
         },
         'extensions.json': {
             all: {
-                // unique identifier format: `publisher:name`
-                [uniqueIdentifier: string]: {
+                [uniqueIdentifier: string]: {           // unique identifier format: `publisher:name`.
+                    alwaysInstall: boolean              // Should the extension always install across all devices?
+                                                        // If set to true this will override any device whitelist.
                     name: string,
                     publisher: string,
                     version: string,
                     isActive: boolean,
-                    createdAt: string // ISO date format.
+                    createdAt: string                   // ISO date format. The date when this extension was noticed by
+                                                        // SyncSettings.
                 }
             },
             whitelists: {
-                // unique identiier: `computerName:uniqueHash`
-                [uniqueIdentifier: string]: {
-                    lastUpdated: string // ISO date string,
+                [uniqueIdentifier: string]: {           // unique identiier: `computerName:uniqueHash`.
+                    lastUpdated: string                 // ISO date string. Last time this whitelist entry was synced
+                                                        // with SyncSettings (created/modified).
                 } & {
-                    // unique identifier format: `publisher:name`
-                    [uniqueIdentifier: string]: {
+                    [uniqueIdentifier: string]: {       // unique identifier format: `publisher:name`.
                         version: string,
                         isActive: boolean
                     }

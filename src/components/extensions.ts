@@ -20,8 +20,35 @@ export type ExtensionPackage = {
     publisher: string;
 };
 
+export type ExtensionsStructure = {
+    all: {
+        [uniqueIdentifier: string]: {
+            alwaysInstall: boolean
+            name: string,
+            publisher: string,
+            version: string,
+            isActive: boolean,
+            createdAt: string
+        }
+    }
+    whitelists: {
+        // device identifier
+        [uniqueIdentifier: string]: Whitelist
+    }
+}
+
+
+export type Whitelist = {
+    lastUpdated: string
+} & {
+    [uniqueIdentifier: string]: { // extension identifier
+        version: string,
+        isActive: boolean
+    }
+}
 
 export function getAllLocallyInstalledExtensions(): Extension[] {
+    const createdAt = (new Date()).toISOString();  // temp
     return vscode.extensions.all
         .map(extension => {
             const { isActive, packageJSON } = extension;
@@ -32,7 +59,7 @@ export function getAllLocallyInstalledExtensions(): Extension[] {
                 version,
                 publisher,
                 // uniqueId: `${publisher};${name};${version}`
-                createdAt: (new Date()).toISOString() // temp
+                createdAt
             };
             return e;
         })

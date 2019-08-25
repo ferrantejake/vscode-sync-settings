@@ -165,27 +165,37 @@ export async function sync(): Promise<void> {
             /********************************************
              * Extensions procedure
              */
-            const exts = extensions.getAllLocallyInstalledExtensions();
-            exts.forEach(e => {
+            const localExtensions = extensions.getAllLocallyInstalledExtensions();
+            const cloudExtensionsSettings = await getExtensions(cloudConfigGist);
+            const jsonContent: extensions.ExtensionsStructure = JSON.parse(cloudExtensionsSettings.content);
+            const cloudExtensions = jsonContent.all;
+            const cloudWhitelist = jsonContent.whitelists[utils.getComputerUniqueIdentifier()];
+            
+            // Get all cloud extensions and local extensions. Get local  - cloud 
+            // and cloud - local
+            
+            if (cloudWhitelist) {
+                // If whitelist exists:
+                // |--- If there are any extensions which have been created after
+                // |--- the whitelist update date then offer to download them and 
+                // |--- add them to the whitelist.
+                // |--- Ignore extensions (.all) created before the last whitelist
+                // |--- update.
+                const newExtensions = Object.keys(cloudExtensions)
+                    .filter(extensionUid => {
+                        const cloudExtCreatedAt = new Date(cloudExtensions[extensionUid].createdAt);
+                        const whitelistLastUpdated = new Date(cloudWhitelist.lastUpdated);
+                        return cloudExtCreatedAt > whitelistLastUpdated;
+                    })
+                    .map(extensionUid => cloudExtensions[extensionUid]);
+                
+            } else {
+                // If a whitelist does not exist
+                // |--- Create a whitelist from local extensions and ask whch 
+                // |--- extensions from .all to install and whitelist
 
-            })
-
-            // const extensionsMeta = localfiles.getUserSettingsMeta();
-            // let extensionsTouched;
-            // if (!extensionsMeta) {
-            //     // if the local user 
-            //     // settings DNE (fresh pulldown) or the settings were deleted.
-            //     const cloudExtensions = await getUserSettings(cloudConfigGist);
-            //     localfiles.setUserSettings(cloudExtensions);
-            //     extensionsTouched = new Date();
-            // } else {
-            //     extensionsTouched = extensionsMeta.mtime;
-            //     if (cloudTouched > extensionsTouched) {
-            //         const cloudExtensions = await getUserSettings(cloudConfigGist);
-            //         localfiles.setUserSettings(cloudExtensions);
-            //     }
-            //     // otherwise do nothing.
-            // }
+                const whitelist = getLocalExtensionsWhitelist();
+            }
 
             /********************************************
              * Keybindings procedure
@@ -269,26 +279,41 @@ export async function sync(): Promise<void> {
             const computerUniqueIdentier = utils.getComputerUniqueIdentifier()
             const exts = extensions.getAllLocallyInstalledExtensions();
             const build = exts.reduce((acc, e) => {
-                    const extensionUniqueIdentier = `${e.publisher}:${e.name}`
-                    acc.all[extensionUniqueIdentier] = e;
-                    acc.whitelists[computerUniqueIdentier] = {
-                        ...acc.whitelists[computerUniqueIdentier],
-                        [extensionUniqueIdentier]: {
-                            version: e.version,
-                            isActive: e.isActive
-                        }
-                    }
-                    return acc;
-                }, currentExtensions || {
-                    all: {},
-                    whitelists: {
-                        [computerUniqueIdentier]: {
-                            lastUpdated: (new Date()).toISOString(),
-                        }
-                    }
-                } as any);
+                const extensionUniqueIdentier = `${e.publisher}:${e.name}`
+                acc.all[extensionUniqueIdentier] = e;
+                // acc.whitelists[computerUniqueIdentier] = {
+                //     ...acc.whitelists[computerUniqueIdentier],
+                //     [extensionUniqueIdentier]: {
+                //         version: e.version,
+                //         isActive: e.isActive
+                //     }
+                // }
+                return acc;
+            }, currentExtensions || {
+                all: {},
+                whitelists: {}
+                // whitelists: {
+                //     [computerUniqueIdentier]: {
+                //         lastUpdated: (new Date()).toISOString(),
+                //     }
+                // }
+            } as any);
+            build.whitelists[computerUniqueIdentier] = getLocalExtensionsWhitelist(exts);
             return build;
         }
+    }
+
+    function getLocalExtensionsWhitelist(localExtensions?: extensions.Extension[]) {
+        localExtensions = localExtensions || extensions.getAllLocallyInstalledExtensions();
+        const whitelist = localExtensions.reduce((acc, e) => {
+            const extensionUniqueIdentier = `${e.publisher}:${e.name}`;
+            acc[extensionUniqueIdentier] = {
+                version: e.version,
+                isActive: e.isActive
+            }
+            return acc;
+        }, {} as any);
+        return whitelist;
     }
 
     function updatePayloadLastUpdate(localPayload: CloudConfigPayload) {
