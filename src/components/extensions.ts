@@ -20,24 +20,43 @@ export type ExtensionPackage = {
     publisher: string;
 };
 
-export type ExtensionsStructure = {
-    all: {
-        [uniqueIdentifier: string]: {
-            alwaysInstall: boolean
-            name: string,
-            publisher: string,
-            version: string,
-            isActive: boolean,
-            createdAt: string
-        }
-    }
-    whitelists: {
-        // device identifier
-        [uniqueIdentifier: string]: Whitelist
-    }
+// export type ExtensionsStructure = {
+//     all: {
+//         [uniqueIdentifier: string]: {
+//             alwaysInstall: boolean
+//             name: string,
+//             publisher: string,
+//             version: string,
+//             isActive: boolean,
+//             createdAt: string
+//         }
+//     }
+//     whitelists: {
+//         // device identifier
+//         [uniqueIdentifier: string]: Whitelist
+//     }
+// }
+
+export type ExtensionsPayload = {
+    all: AllExtensions,
+    whitelists: Whitelists
 }
-
-
+export type AllExtensions = {
+    [uniqueIdentifier: string]: AllExtension
+}
+export type AllExtension = {           // unique identifier format: `publisher:name`.
+    alwaysInstall?: boolean              // Should the extension always install across all devices?
+    // If set to true this will override any device whitelist.
+    name: string,
+    publisher: string,
+    version: string,
+    isActive: boolean,
+    createdAt: string                   // ISO date format. The date when this extension was noticed by
+    // SyncSettings.
+}
+export type Whitelists = {
+    [uniqueIdentifier: string]: Whitelist
+}
 export type Whitelist = {
     lastUpdated: string
 } & {
@@ -73,7 +92,7 @@ export function getMarketplaceDownloadUri(publisher: string, name: string, versi
 }
 
 export async function downloadExtensionToLocalDevice(publisher: string, name: string, version: string) {
-    // localfiles.getExtensions;
+    console.log(`Downloading extension: ${publisher} ${name} ${version}`);
 
     const extensionDirLoc = localfiles.getExtensionsDirectoryLocation();
     if (!extensionDirLoc) {
@@ -87,6 +106,7 @@ export async function downloadExtensionToLocalDevice(publisher: string, name: st
     if (fs.existsSync(extensionDirectoryPath)) {
         // Directory already exists?
         // Maybe we need to remove the directory and download the 
+        console.log(`Already exists: ${publisher} ${name} ${version}`);
         return Promise.resolve(); // file already exists
     }
     if (fs.existsSync(zipFilePath)) {
@@ -139,7 +159,7 @@ export async function downloadExtensionToLocalDevice(publisher: string, name: st
                 console.log('writer emitted "close" event');
                 try {
                     await installExtension(zipFilePath, extensionDirectoryPath);
-                    console.log('operation complete');
+                    console.log(`Download complete: ${publisher} ${name} ${version}`);
                     resolve();
                 } catch (e) {
                     console.log('e', e);

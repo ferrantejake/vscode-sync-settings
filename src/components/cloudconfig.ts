@@ -1,7 +1,7 @@
 import * as stripJSONComments from 'strip-json-comments';
 import { Gist } from './types';
 import { localconfig, localfiles, gist, extensions, utils } from '.';
-
+import * as vscode from 'vscode';
 export type Settings = {
     username: string,
     token: string
@@ -167,34 +167,99 @@ export async function sync(): Promise<void> {
              */
             const localExtensions = extensions.getAllLocallyInstalledExtensions();
             const cloudExtensionsSettings = await getExtensions(cloudConfigGist);
-            const jsonContent: extensions.ExtensionsStructure = JSON.parse(cloudExtensionsSettings.content);
-            const cloudExtensions = jsonContent.all;
-            const cloudWhitelist = jsonContent.whitelists[utils.getComputerUniqueIdentifier()];
-            
+            const extensionsPayload: extensions.ExtensionsPayload = JSON.parse(cloudExtensionsSettings.content);
+            const cloudExtensions = extensionsPayload.all;
+            const cloudWhitelist = extensionsPayload.whitelists[utils.getComputerUniqueIdentifier()];
+
             // Get all cloud extensions and local extensions. Get local  - cloud 
             // and cloud - local
-            
+
             if (cloudWhitelist) {
                 // If whitelist exists:
-                // |--- If there are any extensions which have been created after
+                // |--- If there are any extensions that have been created after
                 // |--- the whitelist update date then offer to download them and 
                 // |--- add them to the whitelist.
                 // |--- Ignore extensions (.all) created before the last whitelist
                 // |--- update.
-                const newExtensions = Object.keys(cloudExtensions)
+                const newExtensionsFromCloudAll = Object.keys(cloudExtensions)
                     .filter(extensionUid => {
                         const cloudExtCreatedAt = new Date(cloudExtensions[extensionUid].createdAt);
                         const whitelistLastUpdated = new Date(cloudWhitelist.lastUpdated);
                         return cloudExtCreatedAt > whitelistLastUpdated;
                     })
                     .map(extensionUid => cloudExtensions[extensionUid]);
-                
+
+                newExtensionsFromCloudAll.push({
+                    alwaysInstall: false,
+                    createdAt: (new Date()).toISOString(),
+                    isActive: true,
+                    name: 'jake-plugin-new',
+                    publisher: 'ferrante',
+                    version: '0.0.1'
+                },
+                    {
+                        alwaysInstall: true,
+                        createdAt: (new Date()).toISOString(),
+                        isActive: true,
+                        name: 'jake-plugin-always-install',
+                        publisher: 'ferrante',
+                        version: '0.0.1'
+                    });
+
+                if (newExtensionsFromCloudAll.length) {
+                    const message = `There are ${newExtensionsFromCloudAll.length} extensions to be downloaded`;
+                    // const opts = { modal: true };
+                    const buttons: string[] = ['Download All', 'Choose Downloads', 'Cancel'];
+                    await vscode.window.showInformationMessage(message, ...buttons)
+                        .then(async answer => {
+                            switch (answer) {
+                                case 'Download All':
+                                    const downloadPromises = newExtensionsFromCloudAll.map(extensionInfo => {
+                                        const { publisher, name, version } = extensionInfo;
+                                        return extensions.downloadExtensionToLocalDevice(publisher, name, version);
+                                    })
+                                    await Promise.all(downloadPromises);
+
+                                    // then make sure to add these new extensions to the device whitelist
+                                    // nvm they should be added by virtue of the payload being generated post-download
+
+                                    break;
+                                case 'Choose Downloads':
+                                    const pickableExtensionNames = newExtensionsFromCloudAll.map(extensionInfo => extensionInfo.name)
+                                    await vscode.window.showQuickPick(pickableExtensionNames, { canPickMany: true })
+                                        .then(extensionNamePicks => {
+                                            extensionNamePicks = extensionNamePicks || [];
+                                            const downloadPromises = extensionNamePicks.map(extensionName => {
+                                                const { publisher, name, version } = newExtensionsFromCloudAll[extensionName as any];
+                                                return extensions.downloadExtensionToLocalDevice(publisher, name, version);
+                                            });
+                                            return Promise.all(downloadPromises);
+
+                                            // make sure to add these extension to the device whitelist
+                                            // nvm they should be added by virtue of the payload being generated post-download
+                                        })
+                                    break;
+                                case 'Cancel':
+                                default: console.log('Extension downloads cancled or ignored')
+                            }
+                        })
+                }
             } else {
                 // If a whitelist does not exist
                 // |--- Create a whitelist from local extensions and ask whch 
                 // |--- extensions from .all to install and whitelist
 
                 const whitelist = getLocalExtensionsWhitelist();
+                // add items to whitelist, add whitelist to payload.
+                // add new items to .all
+
+                const localExtensionUids = Object.keys(whitelist)
+                    .filter(extensionUidAndLastUpdated => extensionUidAndLastUpdated !== 'lastUpdated')
+
+                const localExtensionUidsNotInCloudAll = Object.keys(cloudExtensions)
+                    .filter(extensionUid => !localExtensionUids.indexOf(extensionUid))
+                // add localExtensionUidsNotInCloudAll to all payload
+
             }
 
             /********************************************
@@ -242,7 +307,7 @@ export async function sync(): Promise<void> {
                 || userSettingsTouched > cloudTouched
             ) {
                 // then overwrite everything in the cloud.
-                const localPayload = getLocalConfigPayload();
+                const localPayload = getLocalConfigPayload(extensionsPayload);
                 updatePayloadLastUpdate(localPayload);
                 await gist.update(pat, cloudConfigGistId, localPayload);
             }
@@ -250,11 +315,11 @@ export async function sync(): Promise<void> {
     } catch (e) { return Promise.reject(e); }
 
     // Create payload from local files
-    function getLocalConfigPayload(): CloudConfigPayload {
+    function getLocalConfigPayload(extensionsPayload?: extensions.ExtensionsPayload): CloudConfigPayload {
         const syncSettings = localfiles.getSyncSettings();
         const userSettings = localfiles.getUserSettings() || {};
         const keybindings = localfiles.getKeybindings() || {};
-        const exts = buildExtensions() || {};
+        const exts = buildExtensions(extensionsPayload) || {};
         const settingsStruct = {
             public: false,
             description: "Sync Settings",
@@ -275,35 +340,36 @@ export async function sync(): Promise<void> {
         };
         return settingsStruct;
 
-        function buildExtensions(currentExtensions?: any) {
+        function buildExtensions(currentExtensionsPayload?: extensions.ExtensionsPayload) {
+            let currentAllExtensions: extensions.AllExtensions;
+            if (currentExtensionsPayload)
+                currentAllExtensions = currentExtensionsPayload.all;
             const computerUniqueIdentier = utils.getComputerUniqueIdentifier()
             const exts = extensions.getAllLocallyInstalledExtensions();
             const build = exts.reduce((acc, e) => {
+
+
                 const extensionUniqueIdentier = `${e.publisher}:${e.name}`
                 acc.all[extensionUniqueIdentier] = e;
-                // acc.whitelists[computerUniqueIdentier] = {
-                //     ...acc.whitelists[computerUniqueIdentier],
-                //     [extensionUniqueIdentier]: {
-                //         version: e.version,
-                //         isActive: e.isActive
-                //     }
-                // }
+                if (currentAllExtensions && currentAllExtensions[extensionUniqueIdentier]) {
+                    acc.all[extensionUniqueIdentier].alwaysInstall = currentAllExtensions[extensionUniqueIdentier].alwaysInstall;
+                }
                 return acc;
-            }, currentExtensions || {
+            }, currentExtensionsPayload || {
                 all: {},
                 whitelists: {}
-                // whitelists: {
-                //     [computerUniqueIdentier]: {
-                //         lastUpdated: (new Date()).toISOString(),
-                //     }
-                // }
-            } as any);
+            } as extensions.ExtensionsPayload);
             build.whitelists[computerUniqueIdentier] = getLocalExtensionsWhitelist(exts);
             return build;
         }
     }
 
-    function getLocalExtensionsWhitelist(localExtensions?: extensions.Extension[]) {
+    /**
+     * Builds and returns local device's whitelist. Retrieves extensions list 
+     * from local extensions directory.
+     * @param localExtensions optional list of extensions if already acquired. 
+     */
+    function getLocalExtensionsWhitelist(localExtensions?: extensions.Extension[]): extensions.Whitelist {
         localExtensions = localExtensions || extensions.getAllLocallyInstalledExtensions();
         const whitelist = localExtensions.reduce((acc, e) => {
             const extensionUniqueIdentier = `${e.publisher}:${e.name}`;
@@ -312,7 +378,7 @@ export async function sync(): Promise<void> {
                 isActive: e.isActive
             }
             return acc;
-        }, {} as any);
+        }, {} as extensions.Whitelist);
         return whitelist;
     }
 

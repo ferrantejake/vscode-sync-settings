@@ -24,10 +24,52 @@ export async function activate(context: vscode.ExtensionContext) {
 export function deactivate() { }
 
 function openPATPage() {
-	vscode.env.openExternal(vscode.Uri.parse('https://github.com/settings/tokens/new'));
+	vscode.env.openExternal(vscode.Uri.parse('https://github.com/settings/tokens/new'))
+}
+async function editPAT() {
+	let options: vscode.InputBoxOptions = {
+		prompt: "Label: ",
+		placeHolder: "(placeholder)",
+	}
+
+
+
+	await vscode.window.showQuickPick(['jake', 'ferrante'], { canPickMany: true})
+		.then(console.log);
+
+	// const message = "There are 7 extensions to be downloaded";
+	// // const opts = { modal: true };
+	// const buttons: string[] = ['Download', 'Cancel'];
+	// vscode.window.showInformationMessage(message, ...buttons)
+	// 	.then(console.log)
+
+	// const ib = vscode.window.createInputBox()
+	// // const qib = vscode.window.
+	// // const qibs; // = new vscode.QuickInputButtons()
+	// // const ib: vscode.Quic
+	// // ib.buttons = buttons;
+	// ib.show()
+
+	// // ib.
+	// ib.onDidTriggerButton(button => {
+	// 	console.log(button)
+	// })
+	// ib.title = 'title'
+	// ib.value = 'value'
+	// ib.show();
+
+	console.log('outtie');
+	
+
+	// vscode.window.showInputBox(options)
+	// 	.then(value => {
+	// 		if (!value) return;
+	// 		const answer1 = value;
+	// 		// show the next dialog, etc.
+	// 	});
 }
 
-async function editPAT() {
+async function editPAT2() {
 	const pat = await vscode.window.showInputBox();
 	if (!pat) { return; }
 	const opts: request.RequestOptions = {
@@ -51,7 +93,7 @@ async function editPAT() {
 async function syncSettings() {
 	syncSettingsBackground()
 		.then(() => vscode.window.showInformationMessage('Sync Settings: sync successful'));
-		
+
 }
 
 async function syncSettingsBackground() {
