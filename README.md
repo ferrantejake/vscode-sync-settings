@@ -8,11 +8,12 @@ Synchronize your Visual Studio Code settings across multiple computers
 3. Open Visual Studio Code command pallet and type "VSCode Sync Settings: Sync Settings" to manually sync settings.
 
 
-## TODO
+## Features
 - [ ] Move over to another, lighter request library
 - [ ] Add settings/keybindings blacklist
 - [ ] Diff conflicts for user
 - [ ] Automated sync based on local file changes / polling
-- [ ] Cloud-managed extensions
-- [ ] Device-speicfic extension whitelists
-- [ ] Extensions which should always install without asking
+- [x] Cloud-managed extensions
+- [x] Device-speicfic extension whitelists
+- [x] Extensions which should always install without asking
+- [ ] Session-backed extension downloads (prevents/fixes corrupt downloads)

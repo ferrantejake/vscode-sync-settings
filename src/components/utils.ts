@@ -27,3 +27,47 @@ export function getComputerUniqueIdentifier() {
 
     return `${os.hostname()}`; // temporary
 }
+
+export type Report<T> = {
+    allSuccess: boolean;
+    success: boolean[],
+    successCount: number,
+    responses: T[]
+    rejections: Error[]
+};
+
+function ensureAll<T>(promises: Promise<T>[]): Promise<Report<T>> {
+    const report: Report<T> = {
+        allSuccess: true,
+        successCount: 0,
+        success: [],
+        responses: [],
+        rejections: []
+    };
+    let count = 0;
+    return new Promise<Report<T>>(resolve => {
+        if (!promises || promises.length === 0) resolve();
+        promises.forEach((p, i) => {
+            p
+                .then(res => {
+                    report.success[i] = true;
+                    report.responses[i] = res;
+                    report.successCount++;
+                })
+                .catch(e => {
+                    report.allSuccess = false;
+                    report.success[i] = false;
+                    report.responses[i] = e;
+                    report.rejections[i] = e;
+                })
+                .then(_ => {
+                    if (++count === promises.length)
+                        resolve(report);
+                });
+        });
+    });
+}
+
+export const promise = {
+    ensureAll
+}

@@ -33,18 +33,18 @@ async function getUserSettings(cloudConfigGist: Gist): Promise<SettingsFile> {
 async function getKeybindings(cloudConfigGist: Gist): Promise<SettingsFile> {
     return getFileFromCloudConfig(cloudConfigGist, KEYBINDINGS_FILENAME);
 }
-async function getExtensions(cloudConfigGist: Gist): Promise<SettingsFile> {
-    return getFileFromCloudConfig(cloudConfigGist, EXTENSIONS_FILENAME);
+async function getExtensions(cloudConfigGist: Gist) {
+    return getFileFromCloudConfig<extensions.ExtensionsPayload>(cloudConfigGist, EXTENSIONS_FILENAME);
 }
-async function getFileFromCloudConfig(cloudConfigGist: Gist, filename: 'keybindings.json' | 'user-settings.json' | '.sync-settings.json' | 'extensions.json'): Promise<SettingsFile> {
+async function getFileFromCloudConfig<T>(cloudConfigGist: Gist, filename: 'keybindings.json' | 'user-settings.json' | '.sync-settings.json' | 'extensions.json'): Promise<T> {
     const cloudConfigPayload = await getCloudConfig(cloudConfigGist);
     // @ts-ignore
     if (!cloudConfigPayload) { return; }
     // @ts-ignore
-    let content: any = {};
+    let content: T = {};
     if (cloudConfigPayload.files[filename]) {
-        content = cloudConfigPayload.files[filename]!.content;
-        content = JSON.parse(stripJSONComments(content)) as SettingsFile;
+        const contentStr = cloudConfigPayload.files[filename]!.content as string;
+        content = JSON.parse(stripJSONComments(contentStr));
     }
     return content;
 }
@@ -166,8 +166,7 @@ export async function sync(): Promise<void> {
              * Extensions procedure
              */
             const localExtensions = extensions.getAllLocallyInstalledExtensions();
-            const cloudExtensionsSettings = await getExtensions(cloudConfigGist);
-            const extensionsPayload: extensions.ExtensionsPayload = JSON.parse(cloudExtensionsSettings.content);
+            const extensionsPayload: extensions.ExtensionsPayload = await getExtensions(cloudConfigGist);
             const cloudExtensions = extensionsPayload.all;
             const cloudWhitelist = extensionsPayload.whitelists[utils.getComputerUniqueIdentifier()];
 
@@ -189,22 +188,22 @@ export async function sync(): Promise<void> {
                     })
                     .map(extensionUid => cloudExtensions[extensionUid]);
 
-                newExtensionsFromCloudAll.push({
-                    alwaysInstall: false,
-                    createdAt: (new Date()).toISOString(),
-                    isActive: true,
-                    name: 'jake-plugin-new',
-                    publisher: 'ferrante',
-                    version: '0.0.1'
-                },
-                    {
-                        alwaysInstall: true,
-                        createdAt: (new Date()).toISOString(),
-                        isActive: true,
-                        name: 'jake-plugin-always-install',
-                        publisher: 'ferrante',
-                        version: '0.0.1'
-                    });
+                // newExtensionsFromCloudAll.push({
+                //     alwaysInstall: false,
+                //     createdAt: (new Date()).toISOString(),
+                //     isActive: true,
+                //     name: 'jake-plugin-new',
+                //     publisher: 'ferrante',
+                //     version: '0.0.1'
+                // },
+                //     {
+                //         alwaysInstall: true,
+                //         createdAt: (new Date()).toISOString(),
+                //         isActive: true,
+                //         name: 'jake-plugin-always-install',
+                //         publisher: 'ferrante',
+                //         version: '0.0.1'
+                //     });
 
                 if (newExtensionsFromCloudAll.length) {
                     const message = `There are ${newExtensionsFromCloudAll.length} extensions to be downloaded`;
@@ -218,7 +217,7 @@ export async function sync(): Promise<void> {
                                         const { publisher, name, version } = extensionInfo;
                                         return extensions.downloadExtensionToLocalDevice(publisher, name, version);
                                     })
-                                    await Promise.all(downloadPromises);
+                                    const report = await utils.promise.ensureAll(downloadPromises)
 
                                     // then make sure to add these new extensions to the device whitelist
                                     // nvm they should be added by virtue of the payload being generated post-download
@@ -227,14 +226,13 @@ export async function sync(): Promise<void> {
                                 case 'Choose Downloads':
                                     const pickableExtensionNames = newExtensionsFromCloudAll.map(extensionInfo => extensionInfo.name)
                                     await vscode.window.showQuickPick(pickableExtensionNames, { canPickMany: true })
-                                        .then(extensionNamePicks => {
+                                        .then(async extensionNamePicks => {
                                             extensionNamePicks = extensionNamePicks || [];
                                             const downloadPromises = extensionNamePicks.map(extensionName => {
                                                 const { publisher, name, version } = newExtensionsFromCloudAll[extensionName as any];
                                                 return extensions.downloadExtensionToLocalDevice(publisher, name, version);
                                             });
-                                            return Promise.all(downloadPromises);
-
+                                            const report = await utils.promise.ensureAll(downloadPromises);
                                             // make sure to add these extension to the device whitelist
                                             // nvm they should be added by virtue of the payload being generated post-download
                                         })

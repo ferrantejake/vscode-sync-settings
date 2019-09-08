@@ -3,7 +3,6 @@ import { request, localfiles } from '.';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as url from 'url';
-// var extractzip = require('extract-zip');
 
 export type Extension = {
     isActive: boolean;
@@ -139,13 +138,18 @@ export async function downloadExtensionToLocalDevice(publisher: string, name: st
             if (!streamResponse) {
                 return reject(new Error('Unable to stream file contents'));
             }
+            if(streamResponse.response.statusCode !== 200) {
+                if(streamResponse.response.statusCode === 404) {
+                    return reject(new Error('Extension not available in marketplace.'));
+                } else {
+                    return reject(new Error(`Something went wrong downloading extension: ${publisher} ${name} ${version}`));
+                }
+            }
 
             // redhat;java;0.47.0
-
             // streamResponse.stream.on('ready' => {});
 
             const ws = fs.createWriteStream(zipFilePath, { encoding: 'utf-8' });
-
 
             if ((ws as fs.WriteStream & { pending: boolean }).pending) {
                 ws.on('ready', () => ws.pipe(streamResponse.stream));

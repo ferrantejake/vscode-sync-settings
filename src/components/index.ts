@@ -8,4 +8,4 @@ import * as storage from './storage';
 import * as token from './token';
 import * as utils from './utils';
 
-export { request, storage, token, cloudconfig, localconfig, gist, localfiles, extensions, utils};
+export { request, storage, token, cloudconfig, localconfig, gist, localfiles, extensions, utils,};
